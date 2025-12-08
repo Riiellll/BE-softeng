@@ -1,17 +1,6 @@
-// const express = require('express');
-// const app = express();
-
-// // Middleware
-// app.use(express.json());
-
-// // Routes
-// const router = require('./routes/TrEventRouter.js');
-// app.use('/events', router);
-
-// module.exports = app;
-
 import express from 'express';
 import trEventRouter from './routes/TrEventRouter.js';
+import trNotificationRouter from './routes/TrNotificationRouter.js';
 import cors from 'cors';
 
 const app = express();
@@ -23,5 +12,6 @@ app.use(cors({
   }));
 
 app.use('/events', trEventRouter);
+app.use('/notifications', trNotificationRouter);
 
 export default app;
