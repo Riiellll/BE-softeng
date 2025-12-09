@@ -1,6 +1,7 @@
 import express from 'express';
 import trEventRouter from './routes/TrEventRouter.js';
 import trNotificationRouter from './routes/TrNotificationRouter.js';
+import msUserRouter from './routes/MsUserRouter.js';
 import cors from 'cors';
 
 const app = express();
@@ -13,5 +14,6 @@ app.use(cors({
 
 app.use('/events', trEventRouter);
 app.use('/notifications', trNotificationRouter);
+app.use('/users', msUserRouter);
 
 export default app;
