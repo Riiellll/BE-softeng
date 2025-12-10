@@ -8,6 +8,7 @@ router.get('/admin-table-reviewed', trEventController.getAdminTableReviewed)
 router.get('/admin-table-past-events', trEventController.getAdminTablePastEvents)
 router.get('/get-event-detail/:id', trEventController.getEventDetail)
 router.put('/put-update-approval/:id/:approvalStatus', trEventController.putUpdateApproval)
+router.get('/get-download-zip/:id', trEventController.getDownloadFilesZipped)
 
 
 export default router;

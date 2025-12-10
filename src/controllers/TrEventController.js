@@ -1,4 +1,6 @@
 import { trEventModel } from '../models/TrEventModel.js';
+import JSZip from "jszip";
+import fetch from "node-fetch";
 
 export const trEventController = {
     async getEvents(req, res) {
@@ -71,12 +73,12 @@ export const trEventController = {
         try {
             const { id } = req.params
             const eventDetailFiles = await trEventModel.getEventDetailFile(id)
-            let eventDetailFilesFlattened = eventDetailFiles.map( ev => ({
-                ...ev,
-                ImageURL: ev.TrEvent.ImageURL,
-                OrganizerImageURL: ev.TrEvent.OrganizerImageURL,
-                TrEvent: undefined
-            }))
+            // let eventDetailFilesFlattened = eventDetailFiles.map( ev => ({
+            //     ...ev,
+            //     ImageURL: ev.TrEvent.ImageURL,
+            //     OrganizerImageURL: ev.TrEvent.OrganizerImageURL,
+            //     TrEvent: undefined
+            // }))
 
             let fileNames = eventDetailFiles.map(ev => ({
                 Proposal: ev.ProposalURL.split("/")[9].replace(/%20/g, " "),
@@ -120,7 +122,8 @@ export const trEventController = {
             }))
             
 
-            res.json({ success: true, fileURL: eventDetailFilesFlattened, FileNames: fileNames, EventData: eventDataFlattened})
+            // res.json({ success: true, fileURL: eventDetailFilesFlattened, FileNames: fileNames, EventData: eventDataFlattened})
+            res.json({ success: true, FileNames: fileNames, EventData: eventDataFlattened})
         } catch (err) {
             res.status(500).json({ success: false, message: err.message })
         }
@@ -138,7 +141,45 @@ export const trEventController = {
         } catch (err) {
             res.status(500).json({ success: false, message: err.message })
         }
-    }
+    },
 
-    
+    async getDownloadFilesZipped(req, res){
+        try {
+            const { id } = req.params;
+            const eventDetailFiles = await trEventModel.getEventDetailFile(id);
+            const urls = [];
+
+            eventDetailFiles.forEach(ev => {
+                if (ev.ProposalURL) urls.push(ev.ProposalURL);
+                if (ev.LoAURL) urls.push(ev.LoAURL);
+                if (ev.DoCURL) urls.push(ev.DoCURL);
+                if (ev.PoVURL) urls.push(ev.PoVURL);
+                if (ev.EmergencyProcedureURL) urls.push(ev.EmergencyProcedureURL);
+                if (ev.TermsOfParticipationURL) urls.push(ev.TermsOfParticipationURL);
+                if (ev.TrEvent?.ImageURL) urls.push(ev.TrEvent.ImageURL);
+                if (ev.TrEvent?.OrganizerImageURL) urls.push(ev.TrEvent.OrganizerImageURL);
+            });
+
+            const zip = new JSZip();
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url);
+                    const buffer = await response.arrayBuffer();
+                    const fileName = decodeURIComponent(url.split("/").pop().split("?")[0]);
+                    zip.file(fileName, buffer);
+                } catch (err) {
+                    console.log(`Failed to download ${url}:`, err.message);
+                }
+            }
+
+            const zipFile = await zip.generateAsync({ type: "nodebuffer" });
+            res.set({
+                "Content-Type": "application/zip",
+                "Content-Disposition": "attachment; filename=event_files.zip"
+            });
+            res.send(zipFile);
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
 };
