@@ -65,5 +65,80 @@ export const trEventController = {
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
         }
+    },
+
+    async getEventDetail(req, res){
+        try {
+            const { id } = req.params
+            const eventDetailFiles = await trEventModel.getEventDetailFile(id)
+            let eventDetailFilesFlattened = eventDetailFiles.map( ev => ({
+                ...ev,
+                ImageURL: ev.TrEvent.ImageURL,
+                OrganizerImageURL: ev.TrEvent.OrganizerImageURL,
+                TrEvent: undefined
+            }))
+
+            let fileNames = eventDetailFiles.map(ev => ({
+                Proposal: ev.ProposalURL.split("/")[9].replace(/%20/g, " "),
+                LoA: ev.LoAURL.split("/")[9].replace(/%20/g, " "),
+                DoC: ev.DoCURL.split("/")[9].replace(/%20/g, " "),
+                PoV: ev.PoVURL.split("/")[9].replace(/%20/g, " "),
+                EmergencyProcedure: ev.EmergencyProcedureURL.split("/")[9].replace(/%20/g, " "),
+                TermsOfParticipation: ev.TermsOfParticipationURL.split("/")[9].replace(/%20/g, " "),
+                ImageURL: ev.TrEvent.ImageURL.split("/")[9].replace(/%20/g, " "),
+                OrganizerImageURL: ev.TrEvent.OrganizerImageURL.split("/")[9].replace(/%20/g, " ")
+            }))
+
+            let eventStartDate = await trEventModel.getEventStartDateAndTime(id)
+            let eventEndDate = await trEventModel.getEventEndDate(id)
+            const totalSession = await trEventModel.getTotalSession(id)
+            let startDate = new Date(eventStartDate[0].EventDate)
+            let endDate = new Date(eventEndDate[0].EventDate)
+            let endDateValidation = eventEndDate[0].EventDate
+            const diffDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+            let daysInterval = diffDays / totalSession;
+
+            if (!daysInterval){
+                daysInterval = "-"
+                endDateValidation = "-"
+            }
+
+            const eventData = await trEventModel.getEventDetailData(id)
+            let eventDataFlattened = eventData.map(ev => ({
+                ...ev,
+                EventName: ev.TrEvent.Name,
+                Organizer: ev.TrEvent.Organizer,
+                VolunteerNeed: ev.TrEvent.VolunteerNeed,
+                Description: ev.TrEvent.ShortDescription,
+                PublishAtApproved: ev.TrEvent.PublishAtApproved,
+                StartDate: eventStartDate[0].EventDate,
+                EndDate: endDateValidation,
+                StartTime: eventStartDate[0].StartTime,
+                EndTime: eventStartDate[0].EndTime,
+                daysInterval: daysInterval,
+                TrEvent: undefined
+            }))
+            
+
+            res.json({ success: true, fileURL: eventDetailFilesFlattened, FileNames: fileNames, EventData: eventDataFlattened})
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message })
+        }
+    },
+
+    async putUpdateApproval(req, res){
+        try {
+            const { id, approvalStatus } = req.params
+            let status = false
+            if (approvalStatus == "true"){
+                status = true
+            }
+            const response = await trEventModel.putUpdateApproval(id, status)
+            res.json({ success: true })
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message })
+        }
     }
+
+    
 };
